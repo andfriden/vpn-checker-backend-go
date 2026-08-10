@@ -1,0 +1,22 @@
+# binaries
+vpn-checker
+server
+
+# temp
+/tmp
+*.tmp
+
+# Go
+*.exe
+*.test
+*.out
+
+# IDE
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
+
+# sing-box temp configs
+*.json
