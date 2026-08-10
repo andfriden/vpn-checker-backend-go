@@ -18,9 +18,8 @@ singbox:
   shutdown_timeout: 3s
   socks_host: "127.0.0.1"
 
-database:
-  driver: "sqlite"
-  path: "./data/vpn-checker.db"
+storage:
+  path: "./data"
 
 cleanup:
   enabled: true

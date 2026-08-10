@@ -9,13 +9,15 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig   `yaml:"server"`
-	Checker  CheckerConfig  `yaml:"checker"`
-	SingBox  SingBoxConfig  `yaml:"singbox"`
-	Database DatabaseConfig `yaml:"database"`
-	Cleanup  CleanupConfig  `yaml:"cleanup"`
-	Metrics  MetricsConfig  `yaml:"metrics"`
-	Logging  LoggingConfig  `yaml:"logging"`
+	Server  ServerConfig  `yaml:"server"`
+	Checker CheckerConfig `yaml:"checker"`
+	SingBox SingBoxConfig `yaml:"singbox"`
+
+	Storage StorageConfig `yaml:"storage"`
+
+	Cleanup CleanupConfig `yaml:"cleanup"`
+	Metrics MetricsConfig `yaml:"metrics"`
+	Logging LoggingConfig `yaml:"logging"`
 }
 
 type ServerConfig struct {
@@ -41,9 +43,8 @@ type SingBoxConfig struct {
 	SocksHost       string        `yaml:"socks_host"`
 }
 
-type DatabaseConfig struct {
-	Driver string `yaml:"driver"`
-	Path   string `yaml:"path"`
+type StorageConfig struct {
+	Path string `yaml:"path"`
 }
 
 type CleanupConfig struct {
@@ -81,6 +82,7 @@ func Load(path string) (*Config, error) {
 }
 
 func (c *Config) Validate() error {
+
 	if c.Server.Port < 1 || c.Server.Port > 65535 {
 		return fmt.Errorf("server.port must be between 1 and 65535")
 	}
@@ -105,12 +107,8 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("singbox.binary cannot be empty")
 	}
 
-	if c.Database.Driver == "" {
-		return fmt.Errorf("database.driver cannot be empty")
-	}
-
-	if c.Database.Path == "" {
-		return fmt.Errorf("database.path cannot be empty")
+	if c.Storage.Path == "" {
+		return fmt.Errorf("storage.path cannot be empty")
 	}
 
 	return nil
