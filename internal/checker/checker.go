@@ -163,9 +163,17 @@ func (c *Checker) Check(
 func (c *Checker) CheckMany(
 	ctx context.Context,
 	configs []string,
+	progress ...func(int, int, int),
 ) []*Result {
+
 	if len(configs) == 0 {
 		return []*Result{}
+	}
+
+	var onProgress func(int, int, int)
+
+	if len(progress) > 0 {
+		onProgress = progress[0]
 	}
 
 	workers := c.cfg.Workers
@@ -194,34 +202,75 @@ func (c *Checker) CheckMany(
 
 	var wg sync.WaitGroup
 
+	var progressMu sync.Mutex
+
+	checked := 0
+	working := 0
+	failed := 0
+
 	wg.Add(workers)
 
 	for workerID := 0; workerID < workers; workerID++ {
+
 		go func(id int) {
+
 			defer wg.Done()
 
 			for {
+
 				select {
+
 				case <-ctx.Done():
 					return
 
 				case index, ok := <-jobs:
+
 					if !ok {
 						return
 					}
 
-					results[index] = c.Check(
+					result := c.Check(
 						ctx,
 						configs[index],
 					)
+
+					results[index] = result
+
+					progressMu.Lock()
+
+					checked++
+
+					if result != nil && result.Success {
+						working++
+					} else {
+						failed++
+					}
+
+					currentChecked := checked
+					currentWorking := working
+					currentFailed := failed
+
+					progressMu.Unlock()
+
+					if onProgress != nil {
+						onProgress(
+							currentChecked,
+							currentWorking,
+							currentFailed,
+						)
+					}
 				}
 			}
+
 		}(workerID)
 	}
 
 sendJobs:
+
 	for index := range configs {
+
 		select {
+
 		case <-ctx.Done():
 			break sendJobs
 
@@ -234,6 +283,7 @@ sendJobs:
 	wg.Wait()
 
 	for index := range results {
+
 		if results[index] != nil {
 			continue
 		}
