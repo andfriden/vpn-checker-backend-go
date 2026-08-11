@@ -13,15 +13,6 @@ import (
 	"github.com/andfriden/vpn-checker-backend-go/internal/storage"
 )
 
-type Status struct {
-	Status   string `json:"status"`
-	Total    int    `json:"total"`
-	Checked  int    `json:"checked"`
-	Working  int    `json:"working"`
-	Failed   int    `json:"failed"`
-	Progress int    `json:"progress"`
-}
-
 type Runner struct {
 	cfg     *config.Config
 	checker *checker.Checker
@@ -33,7 +24,6 @@ type Runner struct {
 }
 
 func New(cfg *config.Config) *Runner {
-
 	return &Runner{
 		cfg: cfg,
 
@@ -53,7 +43,6 @@ func New(cfg *config.Config) *Runner {
 }
 
 func (r *Runner) IsRunning() bool {
-
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -61,7 +50,6 @@ func (r *Runner) IsRunning() bool {
 }
 
 func (r *Runner) Status() Status {
-
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -72,7 +60,6 @@ func (r *Runner) RunAsync(
 	ctx context.Context,
 	url string,
 ) bool {
-
 	r.mu.Lock()
 
 	if r.running {
@@ -80,43 +67,57 @@ func (r *Runner) RunAsync(
 		return false
 	}
 
+	started := time.Now()
+
 	r.running = true
 
 	r.status = Status{
-		Status: "running",
+		Status:    "running",
+		StartedAt: &started,
 	}
 
 	r.mu.Unlock()
 
 	go func() {
+		err := r.Run(ctx, url)
 
-		defer func() {
+		finished := time.Now()
 
-			r.mu.Lock()
-			r.running = false
+		r.mu.Lock()
+		defer r.mu.Unlock()
 
-			if r.status.Progress == 100 {
-				r.status.Status = "completed"
-			}
+		r.running = false
 
-			r.mu.Unlock()
+		r.status.FinishedAt = &finished
 
-		}()
+		if r.status.StartedAt != nil {
+			r.status.ElapsedSeconds =
+				finished.Sub(
+					*r.status.StartedAt,
+				).Seconds()
+		}
 
-		if err := r.Run(ctx, url); err != nil {
-
-			r.mu.Lock()
-
+		if err != nil {
 			r.status.Status = "error"
-
-			r.mu.Unlock()
 
 			fmt.Println(
 				"check failed:",
 				err,
 			)
+
+			return
 		}
 
+		r.status.Status = "completed"
+		r.status.Checked = r.status.Total
+		r.status.Progress = 100
+		r.status.EstimatedSecondsLeft = 0
+
+		if r.status.ElapsedSeconds > 0 {
+			r.status.CurrentSpeed =
+				float64(r.status.Checked) /
+					r.status.ElapsedSeconds
+		}
 	}()
 
 	return true
@@ -126,13 +127,11 @@ func (r *Runner) Run(
 	ctx context.Context,
 	url string,
 ) error {
-
 	fmt.Println(
 		"Downloading configs...",
 	)
 
 	configs, err := downloader.DownloadURL(url)
-
 	if err != nil {
 		return err
 	}
@@ -142,6 +141,12 @@ func (r *Runner) Run(
 	r.mu.Lock()
 
 	r.status.Total = total
+	r.status.Checked = 0
+	r.status.Working = 0
+	r.status.Failed = 0
+	r.status.Progress = 0
+	r.status.CurrentSpeed = 0
+	r.status.EstimatedSecondsLeft = 0
 
 	r.mu.Unlock()
 
@@ -153,78 +158,79 @@ func (r *Runner) Run(
 			working int,
 			failed int,
 		) {
+			r.mu.Lock()
+			defer r.mu.Unlock()
 
 			progress := 0
 
 			if total > 0 {
-				progress = checked * 100 / total
+				progress =
+					checked * 100 / total
 			}
 
-			r.mu.Lock()
-
-			r.status.Status = "running"
 			r.status.Checked = checked
 			r.status.Working = working
 			r.status.Failed = failed
 			r.status.Progress = progress
 
-			r.mu.Unlock()
+			if r.status.StartedAt != nil {
+				elapsed :=
+					time.Since(
+						*r.status.StartedAt,
+					)
 
+				r.status.ElapsedSeconds =
+					elapsed.Seconds()
+
+				if elapsed > 0 {
+					r.status.CurrentSpeed =
+						float64(checked) /
+							elapsed.Seconds()
+				}
+
+				if r.status.CurrentSpeed > 0 {
+					r.status.EstimatedSecondsLeft =
+						float64(total-checked) /
+							r.status.CurrentSpeed
+				}
+			}
 		},
 	)
 
-	fmt.Printf(
-		"Checked: %d\n",
+	storageResults := make(
+		[]model.CheckResult,
+		0,
 		len(results),
 	)
 
-	storageResults :=
-		make(
-			[]model.CheckResult,
-			0,
-			len(results),
-		)
+	workingConfigs := make(
+		[]*model.VPNConfig,
+		0,
+	)
 
-	workingConfigs :=
-		make(
-			[]*model.VPNConfig,
-			0,
-		)
-
-	protocolStats :=
-		make(
-			map[string]model.ProtocolStats,
-		)
+	protocolStats := make(
+		map[string]model.ProtocolStats,
+	)
 
 	working := 0
 
 	for _, result := range results {
-
 		if result == nil {
 			continue
 		}
 
-		checkResult := model.CheckResult{
-
-			Config: result.Config,
-
-			Success: result.Success,
-
-			IP: result.IP,
-
-			Latency: result.Latency,
-
-			Error: result.Error,
-		}
-
-		storageResults =
-			append(
-				storageResults,
-				checkResult,
-			)
+		storageResults = append(
+			storageResults,
+			model.CheckResult{
+				Config:  result.Config,
+				Success: result.Success,
+				IP:      result.IP,
+				Latency: result.Latency,
+				Error:   result.Error,
+			},
+		)
 
 		if result.Config != nil {
-
 			protocol :=
 				string(result.Config.Protocol)
 
@@ -234,11 +240,8 @@ func (r *Runner) Run(
 			stat.Total++
 
 			if result.Success {
-
 				stat.Working++
-
 			} else {
-
 				stat.Failed++
 			}
 
@@ -246,11 +249,9 @@ func (r *Runner) Run(
 		}
 
 		if result.Success {
-
 			working++
 
 			if result.Config != nil {
-
 				workingConfigs =
 					append(
 						workingConfigs,
@@ -263,50 +264,32 @@ func (r *Runner) Run(
 	if err := r.storage.SaveResults(
 		storageResults,
 	); err != nil {
-
 		return err
 	}
 
 	if err := r.storage.ExportWorking(
 		workingConfigs,
 	); err != nil {
-
 		return err
 	}
 
 	stats := model.Stats{
-
-		Total: len(storageResults),
-
-		Checked: len(storageResults),
-
-		Working: working,
-
-		Failed: len(storageResults) - working,
-
+		Total:     len(storageResults),
+		Checked:   len(storageResults),
+		Working:   working,
+		Failed:    len(storageResults) - working,
 		Protocols: protocolStats,
-
 		UpdatedAt: time.Now(),
 	}
 
 	if err := r.storage.SaveStats(
 		stats,
 	); err != nil {
-
 		return err
 	}
-
-	r.mu.Lock()
-
-	r.status.Status = "completed"
-
-	r.status.Progress = 100
-
-	r.mu.Unlock()
-
-	fmt.Printf(
-		"Working VPN: %d\n",
-		working,
+	fmt.Println(
+		"Runner finished results:",
+		len(results),
 	)
 
 	return nil

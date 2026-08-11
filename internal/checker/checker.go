@@ -282,6 +282,21 @@ sendJobs:
 
 	wg.Wait()
 
+	completed := 0
+
+	for _, result := range results {
+		if result != nil {
+			completed++
+		}
+	}
+
+	fmt.Println(
+		"CheckMany completed:",
+		completed,
+		"of",
+		len(configs),
+	)
+
 	for index := range results {
 
 		if results[index] != nil {

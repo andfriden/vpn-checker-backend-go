@@ -41,14 +41,12 @@ func (s *Scheduler) Start(
 	)
 
 	// первый запуск сразу
-	if err := s.runner.Run(
+	if !s.runner.RunAsync(
 		ctx,
 		s.url,
-	); err != nil {
-
-		log.Printf(
-			"initial check failed: %v",
-			err,
+	) {
+		log.Println(
+			"initial check skipped: already running",
 		)
 	}
 
@@ -76,22 +74,21 @@ func (s *Scheduler) Start(
 				"scheduled VPN check started",
 			)
 
-			if err := s.runner.Run(
+			if !s.runner.RunAsync(
 				ctx,
 				s.url,
-			); err != nil {
-
-				log.Printf(
-					"scheduled check failed: %v",
-					err,
-				)
-
-			} else {
+			) {
 
 				log.Println(
-					"scheduled VPN check completed",
+					"scheduled VPN check skipped: already running",
 				)
+
+				continue
 			}
+
+			log.Println(
+				"scheduled VPN check launched",
+			)
 		}
 	}
 }
