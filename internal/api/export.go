@@ -2,7 +2,6 @@ package api
 
 import (
 	"net/http"
-	"path/filepath"
 )
 
 func (h *Handler) Export(
@@ -10,8 +9,7 @@ func (h *Handler) Export(
 	r *http.Request,
 ) {
 
-	file := filepath.Join(
-		h.storage.Dir,
+	file := h.resultsService.ExportPath(
 		"all-working.txt",
 	)
 

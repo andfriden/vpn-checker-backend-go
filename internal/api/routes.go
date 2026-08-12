@@ -21,6 +21,11 @@ func Routes(h *Handler) http.Handler {
 	)
 
 	mux.HandleFunc(
+		"/api/best/singbox",
+		h.BestSingBox,
+	)
+
+	mux.HandleFunc(
 		"/api/check",
 		h.Check,
 	)
@@ -38,6 +43,16 @@ func Routes(h *Handler) http.Handler {
 	mux.HandleFunc(
 		"/api/export",
 		h.Export,
+	)
+
+	mux.HandleFunc(
+		"/api/export/json",
+		h.ExportJSON,
+	)
+
+	mux.HandleFunc(
+		"/api/export/singbox",
+		h.ExportSingBox,
 	)
 
 	return mux
