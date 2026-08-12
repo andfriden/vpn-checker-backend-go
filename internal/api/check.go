@@ -21,17 +21,30 @@ func (h *Handler) Check(
 		return
 	}
 
-	url := "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/BLACK_SS%2BAll_RUS.txt"
+
+	source := r.URL.Query().Get("source")
+
+
+	url := h.blackURL
+
+
+	if source == "white" {
+		url = h.whiteURL
+	}
+
 
 	started := h.runner.RunAsync(
 		r.Context(),
 		url,
+                source,
 	)
+
 
 	w.Header().Set(
 		"Content-Type",
 		"application/json",
 	)
+
 
 	if !started {
 
@@ -44,9 +57,11 @@ func (h *Handler) Check(
 		return
 	}
 
+
 	json.NewEncoder(w).Encode(
 		map[string]string{
 			"status": "started",
+			"source": source,
 		},
 	)
 }

@@ -1,0 +1,29 @@
+package checker
+
+import (
+	"context"
+	"testing"
+
+	"github.com/andfriden/vpn-checker-backend-go/internal/config"
+)
+
+func TestChecker_InvalidVPNConfig(t *testing.T) {
+	checker := New(
+		config.CheckerConfig{},
+		config.SingBoxConfig{},
+	)
+
+	result := checker.Check(
+		context.Background(),
+		"not-a-vpn-config",
+		"TEST",
+	)
+
+	if result == nil {
+		t.Fatal("expected result")
+	}
+
+	if result.Error == "" {
+		t.Fatal("expected error")
+	}
+}

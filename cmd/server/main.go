@@ -59,10 +59,12 @@ func main() {
 		blackURL,
 		whiteURL,
 	).Start(ctx)
-	handler := api.NewHandler(
-		runner,
-		resultsService,
-	)
+        handler := api.NewHandler(
+	runner,
+	resultsService,
+	blackURL,
+	whiteURL,
+        )
 	server := &http.Server{
 
 		Addr: fmt.Sprintf(

@@ -59,8 +59,9 @@ func (r *Runner) Status() Status {
 func (r *Runner) RunAsync(
 	ctx context.Context,
 	url string,
-) bool {
-	r.mu.Lock()
+	source string,
+        ) bool {	
+        r.mu.Lock()
 
 	if r.running {
 		r.mu.Unlock()
@@ -79,7 +80,7 @@ func (r *Runner) RunAsync(
 	r.mu.Unlock()
 
 	go func() {
-		err := r.Run(ctx, url)
+		err := r.Run(ctx, url, source)
 
 		finished := time.Now()
 
@@ -126,7 +127,8 @@ func (r *Runner) RunAsync(
 func (r *Runner) Run(
 	ctx context.Context,
 	url string,
-) error {
+	source string,
+        ) error {
 	fmt.Println(
 		"Downloading configs...",
 	)
@@ -153,6 +155,7 @@ func (r *Runner) Run(
 	results := r.checker.CheckMany(
 		ctx,
 		configs,
+                source,
 		func(
 			checked int,
 			working int,

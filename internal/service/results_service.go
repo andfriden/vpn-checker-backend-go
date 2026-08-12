@@ -41,6 +41,7 @@ type ResultItem struct {
 	Latency  int64  `json:"latency_ms"`
 	IP       string `json:"ip,omitempty"`
 	Success  bool   `json:"success"`
+	Source   string `json:"source,omitempty"`
 }
 
 type Pagination struct {

@@ -85,6 +85,42 @@ func Sort(
 					results[j].Latency
 			},
 		)
+
+	case "source":
+
+		sort.SliceStable(
+			results,
+			func(i, j int) bool {
+
+				return sourcePriority(
+					results[i],
+				) <
+					sourcePriority(
+						results[j],
+					)
+			},
+		)
+	}
+}
+
+func sourcePriority(
+	result model.CheckResult,
+) int {
+
+	if result.Config == nil {
+		return 99
+	}
+
+	switch strings.ToUpper(result.Config.Source) {
+
+	case "WHITE":
+		return 0
+
+	case "BLACK":
+		return 1
+
+	default:
+		return 2
 	}
 }
 
@@ -163,6 +199,9 @@ func convertResults(
 
 			item.Port =
 				result.Config.Port
+
+			item.Source =
+				result.Config.Source
 		}
 
 		data = append(

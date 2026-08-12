@@ -58,6 +58,7 @@ func New(
 func (c *Checker) Check(
 	ctx context.Context,
 	raw string,
+	source string,
 ) *Result {
 	result := &Result{}
 
@@ -74,8 +75,9 @@ func (c *Checker) Check(
 		return result
 	}
 
-	result.Config = cfg
+	cfg.Source = source
 
+	result.Config = cfg
 	port, releasePort, err := reserveFreePort()
 	if err != nil {
 		result.Error = fmt.Sprintf(
@@ -163,6 +165,7 @@ func (c *Checker) Check(
 func (c *Checker) CheckMany(
 	ctx context.Context,
 	configs []string,
+	source string,
 	progress ...func(int, int, int),
 ) []*Result {
 
@@ -232,6 +235,7 @@ func (c *Checker) CheckMany(
 					result := c.Check(
 						ctx,
 						configs[index],
+						source,
 					)
 
 					results[index] = result

@@ -91,6 +91,7 @@ func (s *Scheduler) run(
 		if !s.runner.RunAsync(
 			ctx,
 			s.blackURL,
+			"BLACK",
 		) {
 
 			log.Println(
@@ -109,6 +110,7 @@ func (s *Scheduler) run(
 		if !s.runner.RunAsync(
 			ctx,
 			s.whiteURL,
+			"WHITE",
 		) {
 
 			log.Println(

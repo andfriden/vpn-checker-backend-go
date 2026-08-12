@@ -1,0 +1,128 @@
+package checker
+
+import (
+	"context"
+	"testing"
+	"time"
+
+	"github.com/andfriden/vpn-checker-backend-go/internal/config"
+)
+
+func TestChecker_Check_EmptyConfig(t *testing.T) {
+	cfg := config.CheckerConfig{}
+
+	checker := New(
+		cfg,
+		config.SingBoxConfig{},
+	)
+
+	result := checker.Check(
+		context.Background(),
+		"",
+		"TEST",
+	)
+
+	if result == nil {
+		t.Fatal("expected result")
+	}
+
+	if result.Error == "" {
+		t.Fatal("expected error for empty config")
+	}
+}
+
+func TestChecker_CheckMany_Empty(t *testing.T) {
+	cfg := config.CheckerConfig{}
+
+	checker := New(
+		cfg,
+		config.SingBoxConfig{},
+	)
+
+	results := checker.CheckMany(
+		context.Background(),
+		nil,
+		"TEST",
+	)
+
+	if results == nil {
+		t.Fatal("expected empty slice")
+	}
+
+	if len(results) != 0 {
+		t.Fatalf(
+			"expected 0 results, got %d",
+			len(results),
+		)
+	}
+}
+
+func TestChecker_CheckMany_InvalidConfigs(t *testing.T) {
+	cfg := config.CheckerConfig{
+		Workers: 2,
+	}
+
+	checker := New(
+		cfg,
+		config.SingBoxConfig{},
+	)
+
+	configs := []string{
+		"",
+		"invalid",
+	}
+
+	results := checker.CheckMany(
+		context.Background(),
+		configs,
+		"TEST",
+	)
+
+	if len(results) != len(configs) {
+		t.Fatalf(
+			"expected %d results, got %d",
+			len(configs),
+			len(results),
+		)
+	}
+
+	for _, result := range results {
+		if result == nil {
+			t.Fatal("result is nil")
+		}
+	}
+}
+
+func TestChecker_CheckMany_Progress(t *testing.T) {
+	cfg := config.CheckerConfig{
+		Workers: 1,
+	}
+
+	checker := New(
+		cfg,
+		config.SingBoxConfig{},
+	)
+
+	count := 0
+
+	checker.CheckMany(
+		context.Background(),
+		[]string{},
+		"TEST",
+		func(
+			checked int,
+			working int,
+			failed int,
+		) {
+			count++
+		},
+	)
+
+	_ = time.Now()
+
+	if count != 0 {
+		t.Fatalf(
+			"expected no progress callbacks",
+			)
+	}
+}

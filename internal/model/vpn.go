@@ -14,6 +14,8 @@ const (
 type VPNConfig struct {
 	Raw      string   `json:"raw"`
 	Protocol Protocol `json:"protocol"`
+        
+        Source string `json:"source,omitempty"`
 
 	Address string `json:"address"`
 	Port    int    `json:"port"`

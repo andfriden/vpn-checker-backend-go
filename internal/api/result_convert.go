@@ -1,6 +1,10 @@
 package api
 
-import "github.com/andfriden/vpn-checker-backend-go/internal/model"
+import (
+	"strings"
+
+	"github.com/andfriden/vpn-checker-backend-go/internal/model"
+)
 
 type APIResult struct {
 	Protocol string `json:"protocol,omitempty"`
@@ -9,6 +13,7 @@ type APIResult struct {
 	Latency  int64  `json:"latency_ms"`
 	IP       string `json:"ip,omitempty"`
 	Success  bool   `json:"success"`
+	Source   string `json:"source,omitempty"`
 }
 
 func convertAPIResults(
@@ -31,10 +36,26 @@ func convertAPIResults(
 			item.Protocol = string(result.Config.Protocol)
 			item.Address = result.Config.Address
 			item.Port = result.Config.Port
+			item.Source = detectSource(result.Config.Name)
 		}
 
 		data = append(data, item)
 	}
 
 	return data
+}
+
+func detectSource(name string) string {
+	name = strings.ToUpper(name)
+
+	switch {
+	case strings.Contains(name, "[BL]"):
+		return "BLACK"
+
+	case strings.Contains(name, "[WL]"):
+		return "WHITE"
+
+	default:
+		return ""
+	}
 }
