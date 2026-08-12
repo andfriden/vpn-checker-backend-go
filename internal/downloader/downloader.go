@@ -1,53 +1,38 @@
 package downloader
 
 import (
-	"strings"
+	"io"
+	"net/http"
+	"time"
 )
 
 type Downloader struct {
+	Client *http.Client
 }
 
 func New() *Downloader {
-
-	return &Downloader{}
+	return &Downloader{
+		Client: &http.Client{
+			Timeout: 20 * time.Second,
+		},
+	}
 }
 
-func (d *Downloader) ParseList(
-	data string,
-) []string {
+func (d *Downloader) Fetch(url string) (string, error) {
 
-	lines := strings.Split(
-		data,
-		"\n",
-	)
+	resp, err := d.Client.Get(url)
 
-	seen := make(map[string]bool)
-
-	var result []string
-
-	for _, line := range lines {
-
-		line = strings.TrimSpace(line)
-
-		if line == "" {
-			continue
-		}
-
-		if strings.HasPrefix(line, "#") {
-			continue
-		}
-
-		if seen[line] {
-			continue
-		}
-
-		seen[line] = true
-
-		result = append(
-			result,
-			line,
-		)
+	if err != nil {
+		return "", err
 	}
 
-	return result
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+
+	if err != nil {
+		return "", err
+	}
+
+	return string(body), nil
 }

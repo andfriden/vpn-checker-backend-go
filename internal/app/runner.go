@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -24,6 +26,7 @@ type Runner struct {
 }
 
 func New(cfg *config.Config) *Runner {
+
 	return &Runner{
 		cfg: cfg,
 
@@ -43,6 +46,7 @@ func New(cfg *config.Config) *Runner {
 }
 
 func (r *Runner) IsRunning() bool {
+
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -50,6 +54,7 @@ func (r *Runner) IsRunning() bool {
 }
 
 func (r *Runner) Status() Status {
+
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -98,6 +103,7 @@ func (r *Runner) RunAsync(
 		r.status.FinishedAt = &finished
 
 		if r.status.StartedAt != nil {
+
 			r.status.ElapsedSeconds =
 				finished.Sub(
 					*r.status.StartedAt,
@@ -117,16 +123,11 @@ func (r *Runner) RunAsync(
 		}
 
 		r.status.Status = "completed"
-		r.status.Checked = r.status.Total
+
+		r.status.Checked =
+			r.status.Total
+
 		r.status.Progress = 100
-		r.status.EstimatedSecondsLeft = 0
-
-		if r.status.ElapsedSeconds > 0 {
-
-			r.status.CurrentSpeed =
-				float64(r.status.Checked) /
-					r.status.ElapsedSeconds
-		}
 
 	}()
 
@@ -144,11 +145,133 @@ func (r *Runner) Run(
 		source,
 	)
 
-	configs, err := downloader.DownloadURL(url)
+	configs, err := downloader.DownloadURL(
+		url,
+	)
 
 	if err != nil {
 		return err
 	}
+
+	return r.RunConfigs(
+		ctx,
+		configs,
+		source,
+	)
+}
+func (r *Runner) RunCollectedAsync(
+	ctx context.Context,
+) bool {
+
+	r.mu.Lock()
+
+	if r.running {
+		r.mu.Unlock()
+		return false
+	}
+
+	started := time.Now()
+
+	r.running = true
+
+	r.status = Status{
+		Status:    "running",
+		StartedAt: &started,
+	}
+
+	r.mu.Unlock()
+
+	go func() {
+
+		err := r.RunCollected(ctx)
+
+		finished := time.Now()
+
+		r.mu.Lock()
+		defer r.mu.Unlock()
+
+		r.running = false
+
+		r.status.FinishedAt = &finished
+
+		if r.status.StartedAt != nil {
+
+			r.status.ElapsedSeconds =
+				finished.Sub(
+					*r.status.StartedAt,
+				).Seconds()
+		}
+
+		if err != nil {
+
+			r.status.Status = "error"
+
+			fmt.Println(
+				"check failed:",
+				err,
+			)
+
+			return
+		}
+
+		r.status.Status = "completed"
+		r.status.Progress = 100
+		r.status.EstimatedSecondsLeft = 0
+
+	}()
+
+	return true
+}
+
+func (r *Runner) RunCollected(
+	ctx context.Context,
+) error {
+
+	data, err := os.ReadFile(
+		"data/configs/all.txt",
+	)
+
+	if err != nil {
+		return err
+	}
+
+	lines := strings.Split(
+		string(data),
+		"\n",
+	)
+
+	configs := make(
+		[]string,
+		0,
+		len(lines),
+	)
+
+	for _, line := range lines {
+
+		line = strings.TrimSpace(line)
+
+		if line == "" {
+			continue
+		}
+
+		configs = append(
+			configs,
+			line,
+		)
+	}
+
+	return r.RunConfigs(
+		ctx,
+		configs,
+		"collector",
+	)
+}
+
+func (r *Runner) RunConfigs(
+	ctx context.Context,
+	configs []string,
+	source string,
+) error {
 
 	total := len(configs)
 
@@ -159,8 +282,6 @@ func (r *Runner) Run(
 	r.status.Working = 0
 	r.status.Failed = 0
 	r.status.Progress = 0
-	r.status.CurrentSpeed = 0
-	r.status.EstimatedSecondsLeft = 0
 
 	r.mu.Unlock()
 
@@ -180,8 +301,7 @@ func (r *Runner) Run(
 			progress := 0
 
 			if total > 0 {
-				progress =
-					checked * 100 / total
+				progress = checked * 100 / total
 			}
 
 			r.status.Checked = checked
@@ -189,30 +309,6 @@ func (r *Runner) Run(
 			r.status.Failed = failed
 			r.status.Progress = progress
 
-			if r.status.StartedAt != nil {
-
-				elapsed :=
-					time.Since(
-						*r.status.StartedAt,
-					)
-
-				r.status.ElapsedSeconds =
-					elapsed.Seconds()
-
-				if elapsed > 0 {
-
-					r.status.CurrentSpeed =
-						float64(checked) /
-							elapsed.Seconds()
-				}
-
-				if r.status.CurrentSpeed > 0 {
-
-					r.status.EstimatedSecondsLeft =
-						float64(total-checked) /
-							r.status.CurrentSpeed
-				}
-			}
 		},
 	)
 
@@ -287,14 +383,12 @@ func (r *Runner) Run(
 	if err := r.storage.SaveResults(
 		storageResults,
 	); err != nil {
-
 		return err
 	}
 
 	if err := r.storage.ExportWorking(
 		workingConfigs,
 	); err != nil {
-
 		return err
 	}
 
@@ -316,14 +410,8 @@ func (r *Runner) Run(
 	if err := r.storage.SaveStats(
 		stats,
 	); err != nil {
-
 		return err
 	}
-
-	fmt.Println(
-		"Runner finished results:",
-		len(results),
-	)
 
 	return nil
 }

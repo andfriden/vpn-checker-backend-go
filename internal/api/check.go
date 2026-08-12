@@ -10,7 +10,9 @@ func (h *Handler) Check(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
+
 	if r.Method != http.MethodPost {
+
 		http.Error(
 			w,
 			"method not allowed",
@@ -20,36 +22,8 @@ func (h *Handler) Check(
 		return
 	}
 
-	source := r.URL.Query().Get("source")
-
-	var url string
-
-	switch source {
-	case "white":
-		url = h.whiteURL
-
-	case "black":
-		url = h.blackURL
-
-	default:
-		source = "black"
-		url = h.blackURL
-	}
-
-	if url == "" {
-		http.Error(
-			w,
-			"source url is not configured",
-			http.StatusBadRequest,
-		)
-
-		return
-	}
-
-	started := h.runner.RunAsync(
+	started := h.runner.RunCollectedAsync(
 		context.Background(),
-		url,
-		source,
 	)
 
 	w.Header().Set(
@@ -58,6 +32,7 @@ func (h *Handler) Check(
 	)
 
 	if !started {
+
 		json.NewEncoder(w).Encode(
 			map[string]string{
 				"status": "already_running",
@@ -70,7 +45,7 @@ func (h *Handler) Check(
 	json.NewEncoder(w).Encode(
 		map[string]string{
 			"status": "started",
-			"source": source,
+			"source": "collector",
 		},
 	)
 }
