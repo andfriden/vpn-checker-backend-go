@@ -19,7 +19,6 @@ import (
 )
 
 func main() {
-
 	configPath := "configs/config.yaml"
 
 	if v := os.Getenv("VPN_CHECKER_CONFIG"); v != "" {
@@ -36,7 +35,6 @@ func main() {
 		syscall.SIGINT,
 		syscall.SIGTERM,
 	)
-
 	defer stop()
 
 	runner := app.New(cfg)
@@ -49,24 +47,22 @@ func main() {
 		fileStorage,
 	)
 
-	blackURL := "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/BLACK_SS%2BAll_RUS.txt"
-
-	whiteURL := "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE_SS%2BAll_RUS.txt"
-
-	go scheduler.New(
-		runner,
-		cfg.Checker.HealthCheckInterval,
-		blackURL,
-		whiteURL,
-	).Start(ctx)
+	// Автоматический запуск использует свежий
+	// набор из data/configs/all.txt.
+	if cfg.Checker.HealthCheckInterval > 0 {
+		go scheduler.New(
+			runner,
+			cfg.Checker.HealthCheckInterval,
+		).Start(ctx)
+	}
 	handler := api.NewHandler(
 		runner,
 		resultsService,
-		blackURL,
-		whiteURL,
+		"",
+		"",
 	)
-	server := &http.Server{
 
+	server := &http.Server{
 		Addr: fmt.Sprintf(
 			"%s:%d",
 			cfg.Server.Host,
@@ -77,15 +73,12 @@ func main() {
 			handler,
 		),
 
-		ReadTimeout: cfg.Server.ReadTimeout,
-
+		ReadTimeout:  cfg.Server.ReadTimeout,
 		WriteTimeout: cfg.Server.WriteTimeout,
-
-		IdleTimeout: cfg.Server.IdleTimeout,
+		IdleTimeout:  cfg.Server.IdleTimeout,
 	}
 
 	go func() {
-
 		log.Printf(
 			"VPN Checker API listening on %s",
 			server.Addr,
@@ -99,7 +92,6 @@ func main() {
 				err,
 			)
 		}
-
 	}()
 
 	<-ctx.Done()
@@ -112,7 +104,6 @@ func main() {
 		context.Background(),
 		10*time.Second,
 	)
-
 	defer cancel()
 
 	if err := server.Shutdown(

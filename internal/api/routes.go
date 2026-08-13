@@ -55,5 +55,12 @@ func Routes(h *Handler) http.Handler {
 		h.ExportSingBox,
 	)
 
+	mux.Handle(
+		"/",
+		http.FileServer(
+			http.Dir("./web"),
+		),
+	)
+
 	return mux
 }

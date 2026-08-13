@@ -10,7 +10,7 @@ checker:
   max_concurrent_checks: 16
   timeout: 15s
   ip_check_url: "https://api.ipify.org"
-  health_check_interval: 5m
+  health_check_interval: "0s"
 
 singbox:
   binary: "sing-box"

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="color-scheme"
+        content="light dark"
+    >
+
+    <title>VPN Checker</title>
+
+    <link
+        rel="stylesheet"
+        href="/style.css"
+    >
+</head>
+
+<body>
+
+<main class="container">
+
+    <header class="hero">
+        <h1>VPN Checker</h1>
+
+        <p>
+            Проверка VPN-конфигураций
+        </p>
+    </header>
+
+
+    <section class="stats">
+
+        <div class="card">
+            <span>Всего</span>
+            <strong id="total">—</strong>
+        </div>
+
+        <div class="card success">
+            <span>Рабочих</span>
+            <strong id="working">—</strong>
+        </div>
+
+        <div class="card failed">
+            <span>Нерабочих</span>
+            <strong id="failed">—</strong>
+        </div>
+
+        <div class="card progress-card">
+            <span>Прогресс</span>
+            <strong id="progress">—</strong>
+        </div>
+
+    </section>
+
+
+    <section class="panel check-panel">
+
+        <div class="panel-header">
+
+            <div>
+                <h2>Проверка</h2>
+
+                <p
+                    id="status"
+                    class="status"
+                >
+                    Загрузка...
+                </p>
+            </div>
+
+            <button id="checkButton">
+                Запустить проверку
+            </button>
+
+        </div>
+
+        <div class="progress-track">
+            <div
+                id="progressBar"
+                class="progress-bar"
+            ></div>
+        </div>
+
+    </section>
+
+
+    <section class="panel">
+
+        <div class="panel-title">
+            <h2>Протоколы</h2>
+        </div>
+
+        <div id="protocols">
+            Загрузка...
+        </div>
+
+    </section>
+
+
+    <section class="panel">
+
+        <div class="panel-title">
+
+            <div>
+                <h2>Лучшие конфигурации</h2>
+
+                <p class="section-subtitle">
+                    Время ответа через VPN
+                </p>
+            </div>
+
+        </div>
+
+        <div id="best">
+            Загрузка...
+        </div>
+
+    </section>
+
+</main>
+
+<script src="/app.js"></script>
+
+</body>
+</html>

@@ -2,16 +2,16 @@ package normalizer
 
 import (
 	"net/url"
+	"strconv"
 	"strings"
 )
 
 func Unique(configs []string) []string {
+	seen := make(map[string]struct{}, len(configs))
 
-	seen := make(map[string]bool)
 	result := make([]string, 0, len(configs))
 
 	for _, cfg := range configs {
-
 		cfg = strings.TrimSpace(cfg)
 
 		if cfg == "" {
@@ -20,11 +20,11 @@ func Unique(configs []string) []string {
 
 		key := normalizeKey(cfg)
 
-		if seen[key] {
+		if _, exists := seen[key]; exists {
 			continue
 		}
 
-		seen[key] = true
+		seen[key] = struct{}{}
 		result = append(result, cfg)
 	}
 
@@ -32,20 +32,21 @@ func Unique(configs []string) []string {
 }
 
 func normalizeKey(cfg string) string {
-
 	u, err := url.Parse(cfg)
-
 	if err != nil {
 		return cfg
 	}
 
-	host := u.Hostname()
-	port := u.Port()
+	scheme := strings.ToLower(strings.TrimSpace(u.Scheme))
+	host := strings.ToLower(strings.TrimSpace(u.Hostname()))
+	port := normalizePort(scheme, u.Port())
+	user := ""
 
-	scheme := u.Scheme
+	if u.User != nil {
+		user = u.User.String()
+	}
 
 	switch scheme {
-
 	case "vless",
 		"vmess",
 		"trojan",
@@ -53,30 +54,60 @@ func normalizeKey(cfg string) string {
 		"hysteria2",
 		"hy2":
 
+		if scheme == "hy2" {
+			scheme = "hysteria2"
+		}
+
 		return strings.Join(
 			[]string{
 				scheme,
 				host,
 				port,
-				u.User.String(),
+				user,
 			},
 			"|",
 		)
 
 	case "ss":
-
 		return strings.Join(
 			[]string{
 				scheme,
 				host,
 				port,
-				u.User.String(),
+				user,
 			},
 			"|",
 		)
 
 	default:
-
 		return cfg
+	}
+}
+
+func normalizePort(scheme string, port string) string {
+	if port != "" {
+		return port
+	}
+
+	switch scheme {
+	case "vless",
+		"vmess",
+		"trojan",
+		"hysteria",
+		"hysteria2",
+		"hy2",
+		"ss":
+		return strconv.Itoa(defaultPort(scheme))
+	default:
+		return ""
+	}
+}
+
+func defaultPort(scheme string) int {
+	switch scheme {
+	case "hysteria", "hysteria2", "hy2":
+		return 443
+	default:
+		return 443
 	}
 }

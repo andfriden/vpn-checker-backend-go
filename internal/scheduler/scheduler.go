@@ -11,16 +11,11 @@ import (
 type Scheduler struct {
 	runner   *app.Runner
 	interval time.Duration
-
-	blackURL string
-	whiteURL string
 }
 
 func New(
 	runner *app.Runner,
 	interval time.Duration,
-	blackURL string,
-	whiteURL string,
 ) *Scheduler {
 
 	if interval <= 0 {
@@ -30,9 +25,6 @@ func New(
 	return &Scheduler{
 		runner:   runner,
 		interval: interval,
-
-		blackURL: blackURL,
-		whiteURL: whiteURL,
 	}
 }
 
@@ -45,7 +37,7 @@ func (s *Scheduler) Start(
 		s.interval,
 	)
 
-	// первый запуск сразу
+	// Первый запуск сразу.
 	s.run(ctx)
 
 	ticker := time.NewTicker(
@@ -55,11 +47,9 @@ func (s *Scheduler) Start(
 	defer ticker.Stop()
 
 	for {
-
 		select {
 
 		case <-ctx.Done():
-
 			log.Println(
 				"scheduler stopped",
 			)
@@ -67,7 +57,6 @@ func (s *Scheduler) Start(
 			return
 
 		case <-ticker.C:
-
 			log.Println(
 				"scheduled VPN check started",
 			)
@@ -81,41 +70,9 @@ func (s *Scheduler) run(
 	ctx context.Context,
 ) {
 
-	// BLACK
-	if s.blackURL != "" {
-
+	if !s.runner.RunCollectedAsync(ctx) {
 		log.Println(
-			"starting BLACK list check",
+			"scheduled check skipped: already running",
 		)
-
-		if !s.runner.RunAsync(
-			ctx,
-			s.blackURL,
-			"BLACK",
-		) {
-
-			log.Println(
-				"BLACK check skipped: already running",
-			)
-		}
-	}
-
-	// WHITE
-	if s.whiteURL != "" {
-
-		log.Println(
-			"starting WHITE list check",
-		)
-
-		if !s.runner.RunAsync(
-			ctx,
-			s.whiteURL,
-			"WHITE",
-		) {
-
-			log.Println(
-				"WHITE check skipped: already running",
-			)
-		}
 	}
 }

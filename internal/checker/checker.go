@@ -11,6 +11,7 @@ import (
 	"github.com/andfriden/vpn-checker-backend-go/internal/config"
 	"github.com/andfriden/vpn-checker-backend-go/internal/model"
 	"github.com/andfriden/vpn-checker-backend-go/internal/parser"
+	"github.com/andfriden/vpn-checker-backend-go/internal/precheck"
 	"github.com/andfriden/vpn-checker-backend-go/internal/singbox"
 )
 
@@ -76,6 +77,20 @@ func (c *Checker) Check(
 	}
 
 	cfg.Source = source
+
+	if cfg.Protocol != model.ProtocolHysteria2 {
+		ok := precheck.CheckHost(
+			cfg.Address,
+			cfg.Port,
+			1500*time.Millisecond,
+		)
+
+		if !ok {
+			result.Config = cfg
+			result.Error = "tcp precheck failed"
+			return result
+		}
+	}
 
 	result.Config = cfg
 	port, releasePort, err := reserveFreePort()

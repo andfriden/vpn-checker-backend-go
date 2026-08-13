@@ -26,7 +26,6 @@ type Runner struct {
 }
 
 func New(cfg *config.Config) *Runner {
-
 	return &Runner{
 		cfg: cfg,
 
@@ -46,7 +45,6 @@ func New(cfg *config.Config) *Runner {
 }
 
 func (r *Runner) IsRunning() bool {
-
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -54,7 +52,6 @@ func (r *Runner) IsRunning() bool {
 }
 
 func (r *Runner) Status() Status {
-
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -66,7 +63,6 @@ func (r *Runner) RunAsync(
 	url string,
 	source string,
 ) bool {
-
 	r.mu.Lock()
 
 	if r.running {
@@ -86,7 +82,6 @@ func (r *Runner) RunAsync(
 	r.mu.Unlock()
 
 	go func() {
-
 		err := r.Run(
 			ctx,
 			url,
@@ -99,19 +94,15 @@ func (r *Runner) RunAsync(
 		defer r.mu.Unlock()
 
 		r.running = false
-
 		r.status.FinishedAt = &finished
 
 		if r.status.StartedAt != nil {
-
-			r.status.ElapsedSeconds =
-				finished.Sub(
-					*r.status.StartedAt,
-				).Seconds()
+			r.status.ElapsedSeconds = finished.
+				Sub(*r.status.StartedAt).
+				Seconds()
 		}
 
 		if err != nil {
-
 			r.status.Status = "error"
 
 			fmt.Println(
@@ -123,12 +114,9 @@ func (r *Runner) RunAsync(
 		}
 
 		r.status.Status = "completed"
-
-		r.status.Checked =
-			r.status.Total
-
+		r.status.Checked = r.status.Total
 		r.status.Progress = 100
-
+		r.status.EstimatedSecondsLeft = 0
 	}()
 
 	return true
@@ -139,16 +127,12 @@ func (r *Runner) Run(
 	url string,
 	source string,
 ) error {
-
 	fmt.Println(
 		"Downloading configs:",
 		source,
 	)
 
-	configs, err := downloader.DownloadURL(
-		url,
-	)
-
+	configs, err := downloader.DownloadURL(url)
 	if err != nil {
 		return err
 	}
@@ -159,10 +143,10 @@ func (r *Runner) Run(
 		source,
 	)
 }
+
 func (r *Runner) RunCollectedAsync(
 	ctx context.Context,
 ) bool {
-
 	r.mu.Lock()
 
 	if r.running {
@@ -182,7 +166,6 @@ func (r *Runner) RunCollectedAsync(
 	r.mu.Unlock()
 
 	go func() {
-
 		err := r.RunCollected(ctx)
 
 		finished := time.Now()
@@ -191,19 +174,15 @@ func (r *Runner) RunCollectedAsync(
 		defer r.mu.Unlock()
 
 		r.running = false
-
 		r.status.FinishedAt = &finished
 
 		if r.status.StartedAt != nil {
-
-			r.status.ElapsedSeconds =
-				finished.Sub(
-					*r.status.StartedAt,
-				).Seconds()
+			r.status.ElapsedSeconds = finished.
+				Sub(*r.status.StartedAt).
+				Seconds()
 		}
 
 		if err != nil {
-
 			r.status.Status = "error"
 
 			fmt.Println(
@@ -218,6 +197,13 @@ func (r *Runner) RunCollectedAsync(
 		r.status.Progress = 100
 		r.status.EstimatedSecondsLeft = 0
 
+		if r.status.Checked > 0 &&
+			r.status.ElapsedSeconds > 0 {
+
+			r.status.CurrentSpeed =
+				float64(r.status.Checked) /
+					r.status.ElapsedSeconds
+		}
 	}()
 
 	return true
@@ -226,7 +212,6 @@ func (r *Runner) RunCollectedAsync(
 func (r *Runner) RunCollected(
 	ctx context.Context,
 ) error {
-
 	data, err := os.ReadFile(
 		"data/configs/all.txt",
 	)
@@ -247,7 +232,6 @@ func (r *Runner) RunCollected(
 	)
 
 	for _, line := range lines {
-
 		line = strings.TrimSpace(line)
 
 		if line == "" {
@@ -272,7 +256,6 @@ func (r *Runner) RunConfigs(
 	configs []string,
 	source string,
 ) error {
-
 	total := len(configs)
 
 	r.mu.Lock()
@@ -282,6 +265,8 @@ func (r *Runner) RunConfigs(
 	r.status.Working = 0
 	r.status.Failed = 0
 	r.status.Progress = 0
+	r.status.CurrentSpeed = 0
+	r.status.EstimatedSecondsLeft = 0
 
 	r.mu.Unlock()
 
@@ -294,7 +279,6 @@ func (r *Runner) RunConfigs(
 			working int,
 			failed int,
 		) {
-
 			r.mu.Lock()
 			defer r.mu.Unlock()
 
@@ -309,6 +293,32 @@ func (r *Runner) RunConfigs(
 			r.status.Failed = failed
 			r.status.Progress = progress
 
+			if r.status.StartedAt != nil {
+				elapsed := time.Since(
+					*r.status.StartedAt,
+				)
+
+				r.status.ElapsedSeconds =
+					elapsed.Seconds()
+
+				if elapsed > 0 {
+					r.status.CurrentSpeed =
+						float64(checked) /
+							elapsed.Seconds()
+
+					if r.status.CurrentSpeed > 0 {
+						remaining := total - checked
+
+						if remaining < 0 {
+							remaining = 0
+						}
+
+						r.status.EstimatedSecondsLeft =
+							float64(remaining) /
+								r.status.CurrentSpeed
+					}
+				}
+			}
 		},
 	)
 
@@ -330,7 +340,6 @@ func (r *Runner) RunConfigs(
 	working := 0
 
 	for _, result := range results {
-
 		if result == nil {
 			continue
 		}
@@ -347,12 +356,11 @@ func (r *Runner) RunConfigs(
 		)
 
 		if result.Config != nil {
+			protocol := string(
+				result.Config.Protocol,
+			)
 
-			protocol :=
-				string(result.Config.Protocol)
-
-			stat :=
-				protocolStats[protocol]
+			stat := protocolStats[protocol]
 
 			stat.Total++
 
@@ -366,16 +374,13 @@ func (r *Runner) RunConfigs(
 		}
 
 		if result.Success {
-
 			working++
 
 			if result.Config != nil {
-
-				workingConfigs =
-					append(
-						workingConfigs,
-						result.Config,
-					)
+				workingConfigs = append(
+					workingConfigs,
+					result.Config,
+				)
 			}
 		}
 	}
@@ -393,17 +398,11 @@ func (r *Runner) RunConfigs(
 	}
 
 	stats := model.Stats{
-
-		Total: len(storageResults),
-
-		Checked: len(storageResults),
-
-		Working: working,
-
-		Failed: len(storageResults) - working,
-
+		Total:     len(storageResults),
+		Checked:   len(storageResults),
+		Working:   working,
+		Failed:    len(storageResults) - working,
 		Protocols: protocolStats,
-
 		UpdatedAt: time.Now(),
 	}
 
