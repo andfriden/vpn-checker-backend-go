@@ -59,7 +59,7 @@
     </section>
 
 
-    <section class="panel check-panel">
+    <section class="panel">
 
         <div class="panel-header">
 
@@ -74,7 +74,10 @@
                 </p>
             </div>
 
-            <button id="checkButton">
+            <button
+                id="checkButton"
+                type="button"
+            >
                 Запустить проверку
             </button>
 
@@ -119,6 +122,51 @@
 
         <div id="best">
             Загрузка...
+        </div>
+
+    </section>
+
+
+    <section class="panel">
+
+        <div class="panel-title">
+
+            <div>
+                <h2>Экспорт</h2>
+
+                <p class="section-subtitle">
+                    Сохранённые рабочие конфигурации
+                </p>
+            </div>
+
+        </div>
+
+        <div class="export-buttons">
+
+            <a
+                class="export-button primary"
+                href="/api/export"
+                download
+            >
+                Скачать TXT
+            </a>
+
+            <a
+                class="export-button"
+                href="/api/export/json"
+                download
+            >
+                Скачать JSON
+            </a>
+
+            <a
+                class="export-button"
+                href="/api/export/singbox"
+                download
+            >
+                Скачать Sing-box
+            </a>
+
         </div>
 
     </section>
