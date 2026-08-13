@@ -1,20 +1,129 @@
 let checking = false;
 let pollTimer = null;
 
+
+/* =========================
+   THEME
+   ========================= */
+
+function getPreferredTheme() {
+    const savedTheme =
+        localStorage.getItem(
+            "vpn-checker-theme"
+        );
+
+    if (
+        savedTheme === "light" ||
+        savedTheme === "dark"
+    ) {
+        return savedTheme;
+    }
+
+    return window.matchMedia(
+        "(prefers-color-scheme: dark)"
+    ).matches
+        ? "dark"
+        : "light";
+}
+
+function applyTheme(theme) {
+    document.documentElement.dataset.theme =
+        theme;
+
+    const icon =
+        document.getElementById(
+            "themeIcon"
+        );
+
+    const button =
+        document.getElementById(
+            "themeToggle"
+        );
+
+    if (icon) {
+        icon.textContent =
+            theme === "dark"
+                ? "☀️"
+                : "🌙";
+    }
+
+    if (button) {
+        const label =
+            theme === "dark"
+                ? "Переключить на светлую тему"
+                : "Переключить на тёмную тему";
+
+        button.setAttribute(
+            "aria-label",
+            label
+        );
+
+        button.setAttribute(
+            "title",
+            label
+        );
+    }
+}
+
+function initTheme() {
+    applyTheme(
+        getPreferredTheme()
+    );
+
+    const button =
+        document.getElementById(
+            "themeToggle"
+        );
+
+    if (!button) {
+        return;
+    }
+
+    button.addEventListener(
+        "click",
+        () => {
+            const currentTheme =
+                document.documentElement
+                    .dataset
+                    .theme;
+
+            const nextTheme =
+                currentTheme === "dark"
+                    ? "light"
+                    : "dark";
+
+            localStorage.setItem(
+                "vpn-checker-theme",
+                nextTheme
+            );
+
+            applyTheme(nextTheme);
+        }
+    );
+}
+
+
+/* =========================
+   HELPERS
+   ========================= */
+
 async function getJSON(url) {
     const response = await fetch(url, {
         cache: "no-store",
     });
 
     if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        throw new Error(
+            `HTTP ${response.status}`
+        );
     }
 
     return await response.json();
 }
 
 function setText(id, value) {
-    const element = document.getElementById(id);
+    const element =
+        document.getElementById(id);
 
     if (element) {
         element.textContent = value;
@@ -24,17 +133,28 @@ function setText(id, value) {
 function formatDuration(seconds) {
     const value = Number(seconds);
 
-    if (!Number.isFinite(value) || value <= 0) {
+    if (
+        !Number.isFinite(value) ||
+        value <= 0
+    ) {
         return "—";
     }
 
-    const totalSeconds = Math.ceil(value);
+    const totalSeconds =
+        Math.ceil(value);
 
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor(
-        (totalSeconds % 3600) / 60
-    );
-    const secs = totalSeconds % 60;
+    const hours =
+        Math.floor(
+            totalSeconds / 3600
+        );
+
+    const minutes =
+        Math.floor(
+            (totalSeconds % 3600) / 60
+        );
+
+    const secs =
+        totalSeconds % 60;
 
     if (hours > 0) {
         return `${hours} ч ${minutes} мин`;
@@ -50,60 +170,102 @@ function formatDuration(seconds) {
 function formatSpeed(speed) {
     const value = Number(speed);
 
-    if (!Number.isFinite(value) || value <= 0) {
+    if (
+        !Number.isFinite(value) ||
+        value <= 0
+    ) {
         return "—";
     }
 
     return `${value.toFixed(1)} cfg/s`;
 }
 
-function updateCards(total, working, failed) {
-    setText("total", total);
-    setText("working", working);
-    setText("failed", failed);
+function updateCards(
+    total,
+    working,
+    failed
+) {
+    setText(
+        "total",
+        total
+    );
+
+    setText(
+        "working",
+        working
+    );
+
+    setText(
+        "failed",
+        failed
+    );
 }
+
+
+/* =========================
+   STATS
+   ========================= */
 
 async function updateStats() {
     try {
-        const data = await getJSON(
-            "/api/stats?t=" + Date.now()
-        );
+        const data =
+            await getJSON(
+                "/api/stats?t=" +
+                Date.now()
+            );
 
         const container =
-            document.getElementById("protocols");
+            document.getElementById(
+                "protocols"
+            );
 
         if (!container) {
             return;
         }
 
-        const protocols = data.protocols || {};
+        const protocols =
+            data.protocols || {};
 
         container.innerHTML =
             Object.entries(protocols)
-                .map(([name, stat]) => `
-                    <p>
-                        <strong>${name}</strong>:
-                        ${stat.working ?? 0}/${
-                            stat.total ?? 0
-                        }
-                        рабочих
-                    </p>
-                `)
+                .map(
+                    ([name, stat]) => `
+                        <p>
+                            <strong>${name}</strong>:
+                            ${stat.working ?? 0}/${
+                                stat.total ?? 0
+                            }
+                            рабочих
+                        </p>
+                    `
+                )
                 .join("");
 
     } catch (error) {
-        console.error("updateStats:", error);
+        console.error(
+            "updateStats:",
+            error
+        );
     }
 }
 
+
+/* =========================
+   BEST CONFIGS
+   ========================= */
+
 async function updateBest() {
     try {
-        const data = await getJSON(
-            "/api/best?limit=5&t=" + Date.now()
-        );
+        const data =
+            await getJSON(
+                "/api/best?limit=5&t=" +
+                Date.now()
+            );
 
         const container =
-            document.getElementById("best");
+            document.getElementById(
+                "best"
+            );
 
         if (!container) {
             return;
@@ -111,24 +273,36 @@ async function updateBest() {
 
         container.innerHTML =
             data
-                .map((item, index) => `
-                    <p>
-                        <strong>#${index + 1}</strong>
-                        ${item.protocol ?? ""}
-                        —
-                        ${item.address ?? ""}:${
-                            item.port ?? ""
-                        }
-                        —
-                        ${item.latency_ms ?? 0} ms
-                    </p>
-                `)
+                .map(
+                    (item, index) => `
+                        <p>
+                            <strong>
+                                #${index + 1}
+                            </strong>
+                            ${item.protocol ?? ""}
+                            —
+                            ${item.address ?? ""}:${
+                                item.port ?? ""
+                            }
+                            —
+                            ${item.latency_ms ?? 0} ms
+                        </p>
+                    `
+                )
                 .join("");
 
     } catch (error) {
-        console.error("updateBest:", error);
+        console.error(
+            "updateBest:",
+            error
+        );
     }
 }
+
+
+/* =========================
+   POLLING
+   ========================= */
 
 function startPolling() {
     if (pollTimer !== null) {
@@ -143,16 +317,26 @@ function startPolling() {
 
 function stopPolling() {
     if (pollTimer !== null) {
-        clearInterval(pollTimer);
+        clearInterval(
+            pollTimer
+        );
+
         pollTimer = null;
     }
 }
 
+
+/* =========================
+   CHECK STATUS
+   ========================= */
+
 async function updateStatus() {
     try {
-        const data = await getJSON(
-            "/api/check/status?t=" + Date.now()
-        );
+        const data =
+            await getJSON(
+                "/api/check/status?t=" +
+                Date.now()
+            );
 
         const total =
             Number(data.total) || 0;
@@ -170,35 +354,48 @@ async function updateStatus() {
             Number(data.current_speed) || 0;
 
         const eta =
-            Number(data.estimated_seconds_left) || 0;
+            Number(
+                data.estimated_seconds_left
+            ) || 0;
 
         let progress = 0;
 
         if (total > 0) {
-            progress = Math.floor(
-                checked * 100 / total
-            );
+            progress =
+                Math.floor(
+                    checked * 100 / total
+                );
         }
 
-        if (data.status === "running") {
+        if (
+            data.status === "completed"
+        ) {
+            progress = 100;
+        }
+
+        setText(
+            "progress",
+            `${progress}%`
+        );
+
+        const progressBar =
+            document.getElementById(
+                "progressBar"
+            );
+
+        if (progressBar) {
+            progressBar.style.width =
+                `${progress}%`;
+        }
+
+        if (
+            data.status === "running"
+        ) {
             updateCards(
                 total,
                 working,
                 failed
             );
-
-            setText(
-                "progress",
-                `${progress}%`
-            );
-
-            const progressBar =
-            document.getElementById("progressBar");
-
-            if (progressBar) {
-            progressBar.style.width =
-            `${progress}%`;
-             }
 
             const speedText =
                 formatSpeed(speed);
@@ -222,19 +419,20 @@ async function updateStatus() {
 
             if (button) {
                 button.disabled = true;
-                button.textContent = "Проверка...";
+                button.textContent =
+                    "Проверка...";
             }
 
             checking = true;
 
-            // Если страницу открыли уже во время проверки,
-            // polling автоматически запускается.
             startPolling();
 
             return data;
         }
 
-        if (data.status === "completed") {
+        if (
+            data.status === "completed"
+        ) {
             updateCards(
                 total,
                 working,
@@ -246,12 +444,9 @@ async function updateStatus() {
                 "100%"
             );
 
-            const progressBar =
-             document.getElementById("progressBar");
-
-              if (progressBar) {
-              progressBar.style.width =
-             `${progress}%`;
+            if (progressBar) {
+                progressBar.style.width =
+                    "100%";
             }
 
             setText(
@@ -272,6 +467,7 @@ async function updateStatus() {
             }
 
             checking = false;
+
             stopPolling();
 
             await Promise.all([
@@ -282,16 +478,13 @@ async function updateStatus() {
             return data;
         }
 
-        if (data.status === "error") {
+        if (
+            data.status === "error"
+        ) {
             updateCards(
                 total,
                 working,
                 failed
-            );
-
-            setText(
-                "progress",
-                `${progress}%`
             );
 
             setText(
@@ -311,6 +504,7 @@ async function updateStatus() {
             }
 
             checking = false;
+
             stopPolling();
 
             await Promise.all([
@@ -320,11 +514,6 @@ async function updateStatus() {
 
             return data;
         }
-
-        setText(
-            "progress",
-            `${progress}%`
-        );
 
         setText(
             "status",
@@ -344,6 +533,11 @@ async function updateStatus() {
         return null;
     }
 }
+
+
+/* =========================
+   START CHECK
+   ========================= */
 
 async function startCheck() {
     if (checking) {
@@ -367,19 +561,31 @@ async function startCheck() {
         "Запуск проверки..."
     );
 
+    const progressBar =
+        document.getElementById(
+            "progressBar"
+        );
+
+    if (progressBar) {
+        progressBar.style.width =
+            "0%";
+    }
+
     if (button) {
         button.disabled = true;
-        button.textContent = "Запуск...";
+        button.textContent =
+            "Запуск...";
     }
 
     try {
-        const response = await fetch(
-            "/api/check",
-            {
-                method: "POST",
-                cache: "no-store",
-            }
-        );
+        const response =
+            await fetch(
+                "/api/check",
+                {
+                    method: "POST",
+                    cache: "no-store",
+                }
+            );
 
         if (!response.ok) {
             throw new Error(
@@ -398,6 +604,7 @@ async function startCheck() {
         );
 
         checking = false;
+
         stopPolling();
 
         if (button) {
@@ -413,7 +620,14 @@ async function startCheck() {
     }
 }
 
+
+/* =========================
+   INIT
+   ========================= */
+
 async function init() {
+    initTheme();
+
     const button =
         document.getElementById(
             "checkButton"
@@ -426,9 +640,6 @@ async function init() {
         );
     }
 
-    // Сразу проверяем состояние.
-    // Если проверка уже идёт, updateStatus()
-    // сам включит polling.
     await Promise.all([
         updateStatus(),
         updateStats(),

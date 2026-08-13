@@ -1,31 +1,35 @@
 # VPN Checker Backend
 
-Go-бэкенд для сбора, проверки и хранения рабочих VPN-конфигураций.
+[🇬🇧 English](README.md) | [🇷🇺 Русский](README.ru.md)
 
-Проект собирает конфигурации из нескольких источников, удаляет дубли, выполняет быстрый TCP pre-check, запускает `sing-box` для полноценной проверки VPN и сохраняет рабочие конфигурации.
+A Go backend for collecting, checking, storing, and exporting working VPN configurations.
 
-## Возможности
+The project collects VPN configurations from multiple sources, normalizes and deduplicates them, performs a fast TCP pre-check, launches `sing-box` for a full VPN test, verifies real Internet access through the tunnel, measures response time, and stores working configurations.
 
-* Поддержка VLESS, VMess, Trojan и Hysteria2.
-* Сбор конфигураций из нескольких источников.
-* Нормализация и удаление дубликатов.
-* TCP pre-check перед запуском `sing-box`.
-* Полноценная проверка через `sing-box`.
-* Проверка реального выхода в интернет через VPN.
-* Определение внешнего IP.
-* Измерение времени ответа через VPN.
-* Параллельная проверка конфигураций.
-* Realtime-прогресс, скорость и ETA.
-* JSON API.
+## Features
+
+* VLESS, VMess, Trojan, and Hysteria2 support.
+* Collect configurations from multiple sources.
+* Normalize and deduplicate configurations.
+* Fast TCP pre-check before running `sing-box`.
+* Full VPN validation through `sing-box`.
+* Real HTTP request through the VPN tunnel.
+* External IP detection.
+* VPN response-time measurement.
+* Parallel configuration checks.
+* Realtime progress, speed, and ETA.
+* REST API.
 * Web UI.
-* Catppuccin Latte / Mocha.
-* Статистика по протоколам.
-* Рейтинг лучших рабочих конфигураций.
-* Экспорт TXT, JSON и Sing-box.
-* Автоматическая сборка релизов для Linux, macOS и Windows.
-* SLSA provenance для release-артефактов.
+* Catppuccin Latte and Mocha themes.
+* Protocol statistics.
+* Best working configuration ranking.
+* TXT, JSON, and Sing-box export.
+* Manual checks through Web UI or API.
+* Optional scheduler.
+* Cross-platform release builds for Linux, macOS, and Windows.
+* SLSA provenance for release artifacts.
 
-## Архитектура
+## Architecture
 
 ```text
 configs/sources.yaml
@@ -59,42 +63,35 @@ configs/sources.yaml
              API / Web UI
 ```
 
-## Требования
+## Requirements
 
 * Go 1.22+
 * `sing-box`
-* Linux, macOS или Windows
-* Доступ в интернет
+* Linux, macOS, or Windows
+* Internet access
 
-Проверить установку:
+Check the installation:
 
 ```bash
 go version
 sing-box version
 ```
 
-## Установка из исходников
-
-Клонировать репозиторий:
+## Installation
 
 ```bash
 git clone https://github.com/andfriden/vpn-checker-backend-go.git
 cd vpn-checker-backend-go
-```
-
-Установить зависимости:
-
-```bash
 go mod download
 ```
 
-Проверить проект:
+Run tests:
 
 ```bash
 go test ./...
 ```
 
-## Запуск на Linux
+## Running on Linux
 
 ### Arch Linux
 
@@ -102,32 +99,27 @@ go test ./...
 sudo pacman -S go
 ```
 
-Установить `sing-box` удобным для системы способом.
+Install `sing-box` using the method appropriate for your system.
 
-Проверить:
-
-```bash
-go version
-sing-box version
-```
-
-Собрать список конфигураций:
+Build the current configuration set:
 
 ```bash
 go run ./cmd/collector
 ```
 
-Запустить сервер:
+Start the server:
 
 ```bash
 go run ./cmd/server
 ```
 
-Открыть:
+Open:
 
 ```text
 http://localhost:8080/
 ```
+
+Stop the server with `Ctrl+C`.
 
 ### Ubuntu / Debian
 
@@ -136,114 +128,135 @@ sudo apt update
 sudo apt install golang
 ```
 
-Затем:
+Then:
 
 ```bash
+go version
+sing-box version
 go mod download
 go run ./cmd/collector
 go run ./cmd/server
 ```
 
-## Запуск на macOS
+## Running on macOS
 
-Установить Go через Homebrew:
+With Homebrew:
 
 ```bash
 brew install go
 ```
 
-Проверить:
+Install `sing-box`, then verify:
 
 ```bash
 go version
 sing-box version
 ```
 
-Собрать список:
+Clone and prepare the project:
+
+```bash
+git clone https://github.com/andfriden/vpn-checker-backend-go.git
+cd vpn-checker-backend-go
+go mod download
+```
+
+Build the configuration set:
 
 ```bash
 go run ./cmd/collector
 ```
 
-Запустить:
+Start the server:
 
 ```bash
 go run ./cmd/server
 ```
 
-Web UI:
+Open:
 
 ```text
 http://localhost:8080/
 ```
 
-## Запуск на Windows
+## Running on Windows
 
-Установить Go с:
+Install Go from:
 
 ```text
 https://go.dev/dl/
 ```
 
-Проверить в PowerShell:
+Install `sing-box` and add it to `PATH`, or specify its full path in `configs/config.yaml`.
+
+Check:
 
 ```powershell
 go version
 sing-box version
 ```
 
-Клонировать репозиторий:
+Clone the project:
 
 ```powershell
 git clone https://github.com/andfriden/vpn-checker-backend-go.git
 cd vpn-checker-backend-go
-```
-
-Установить зависимости:
-
-```powershell
 go mod download
 ```
 
-Собрать конфигурации:
+Build the configuration set:
 
 ```powershell
 go run .\cmd\collector
 ```
 
-Запустить сервер:
+Start the server:
 
 ```powershell
 go run .\cmd\server
 ```
 
-Открыть:
+Open:
 
 ```text
 http://localhost:8080/
 ```
 
-Остановить сервер:
+## Configuration
 
-```text
-Ctrl+C
-```
-
-## Настройка sing-box
-
-Путь к бинарнику задаётся в:
+Main configuration:
 
 ```text
 configs/config.yaml
 ```
 
-Если `sing-box` находится в `PATH`:
+Source configuration:
+
+```text
+configs/sources.yaml
+```
+
+After changing the sources, rebuild the input set:
+
+```bash
+go run ./cmd/collector
+```
+
+The result is stored in:
+
+```text
+data/configs/all.txt
+```
+
+### sing-box path
+
+If `sing-box` is available in `PATH`:
 
 ```yaml
 binary: sing-box
 ```
 
-Linux/macOS с абсолютным путём:
+Linux/macOS:
 
 ```yaml
 binary: /usr/local/bin/sing-box
@@ -255,49 +268,21 @@ Windows:
 binary: C:\sing-box\sing-box.exe
 ```
 
-## Источники конфигураций
+## Running a Check
 
-Источники задаются в:
-
-```text
-configs/sources.yaml
-```
-
-Текущая конфигурация использует FAST-наборы Russia и Europe вместе с дополнительными источниками.
-
-Сбор:
-
-```bash
-go run ./cmd/collector
-```
-
-Результат:
-
-```text
-data/configs/all.txt
-```
-
-## Проверка конфигураций
-
-Проверку можно запустить через Web UI:
-
-```text
-Запустить проверку
-```
-
-или через API:
+Start a check from the Web UI using **Start Check**, or through the API:
 
 ```bash
 curl -X POST http://localhost:8080/api/check
 ```
 
-Статус:
+Get the current status:
 
 ```bash
 curl http://localhost:8080/api/check/status
 ```
 
-Пример:
+Example:
 
 ```json
 {
@@ -307,43 +292,41 @@ curl http://localhost:8080/api/check/status
   "working": 67,
   "failed": 1094,
   "progress": 56,
-  "started_at": "2026-08-13T12:38:02+03:00",
-  "elapsed_seconds": 324.07,
   "current_speed": 3.58,
   "estimated_seconds_left": 247.31
 }
 ```
 
-Web UI обновляет прогресс автоматически без перезагрузки страницы.
+The Web UI updates the progress bar, counters, speed, and ETA automatically without reloading the page.
 
-## Как определяется рабочий конфиг
+## How a Configuration Is Validated
 
-Для большинства протоколов сначала выполняется TCP pre-check:
+For VLESS, VMess, and Trojan, the checker first performs a TCP pre-check:
 
 ```text
 server:port
 ```
 
-Если endpoint недоступен, конфигурация отсеивается без запуска полного VPN-теста.
+If the endpoint is unreachable, the configuration is rejected before starting `sing-box`.
 
-После этого запускается `sing-box` с временной конфигурацией.
+For the full check, `sing-box` is started with a temporary configuration. Once the local SOCKS5 proxy becomes ready, the checker performs an HTTP request through the VPN tunnel to an external IP service.
 
-Когда SOCKS5 становится доступен, выполняется HTTP-запрос через VPN к сервису определения внешнего IP.
+A configuration is considered working when:
 
-Конфигурация считается рабочей, если:
+* `sing-box` starts successfully;
+* the local SOCKS5 proxy becomes available;
+* the HTTP request through the VPN succeeds;
+* an external IP is returned.
 
-* `sing-box` успешно запустился;
-* SOCKS5 стал доступен;
-* HTTP-запрос через VPN завершился успешно;
-* получен внешний IP.
+Hysteria2 skips the TCP pre-check and is tested directly through `sing-box`.
 
 ## Latency
 
-`latency` — это время выполнения HTTP-запроса через VPN.
+The `latency` value is the **response time through the VPN**.
 
-Это **не ICMP ping** и не чистый RTT до VPN-сервера.
+It is not an ICMP ping and not a pure RTT to the VPN server.
 
-Схема:
+Measured path:
 
 ```text
 SOCKS5
@@ -352,50 +335,50 @@ VPN tunnel
    ↓
 HTTP request
    ↓
-external IP service
+External IP service
    ↓
-response
+Response
 ```
 
-В Web UI эта метрика обозначена как:
+The Web UI labels this metric:
 
 ```text
-Время ответа через VPN
+VPN response time
 ```
 
-Именно она используется для сортировки лучших рабочих конфигураций.
+It is used to rank the **Best Configurations** section.
 
-## Результаты
+## Results
 
-Рабочие конфигурации:
+Working configurations:
 
 ```text
 data/all-working.txt
 ```
 
-Все результаты:
+All check results:
 
 ```text
 data/results.json
 ```
 
-Статистика:
+Statistics:
 
 ```text
 data/stats.json
 ```
 
-## Экспорт
+## Export
 
-Web UI поддерживает три варианта экспорта:
+The Web UI supports:
 
 ```text
-TXT
-JSON
-Sing-box
+Download TXT
+Download JSON
+Download Sing-box
 ```
 
-API:
+API endpoints:
 
 ```text
 GET /api/export
@@ -403,59 +386,48 @@ GET /api/export/json
 GET /api/export/singbox
 ```
 
-Пример TXT:
+Download TXT:
 
 ```bash
 curl -OJ http://localhost:8080/api/export
 ```
 
-JSON:
+Download JSON:
 
 ```bash
-curl -o results.json \
-  http://localhost:8080/api/export/json
+curl -o results.json http://localhost:8080/api/export/json
 ```
 
-Sing-box:
+Download Sing-box configuration:
 
 ```bash
-curl -o singbox.json \
-  http://localhost:8080/api/export/singbox
+curl -o singbox.json http://localhost:8080/api/export/singbox
 ```
 
-## Web UI
+Export uses already stored results and does not start a new check.
 
-Frontend:
+## Scheduler
 
-```text
-web/
-├── index.html
-├── app.js
-└── style.css
+Automatic checks can be disabled with:
+
+```yaml
+health_check_interval: "0s"
 ```
 
-Интерфейс поддерживает:
+In this mode, checks are started only manually through the Web UI or API.
 
-* Catppuccin Latte для светлой темы.
-* Catppuccin Mocha для тёмной темы.
-* автоматический выбор темы через `prefers-color-scheme`.
-* realtime progress bar.
-* текущую скорость проверки.
-* ETA.
-* количество рабочих и нерабочих конфигураций.
-* статистику по протоколам.
-* лучшие конфигурации.
-* экспорт результатов.
+```bash
+curl -X POST http://localhost:8080/api/check
+```
+
+Reloading the Web UI does not start a new check.
 
 ## API
-
-Основные endpoints:
 
 ```text
 GET  /health
 
 GET  /api/results
-
 GET  /api/best
 GET  /api/best/singbox
 
@@ -469,60 +441,35 @@ GET  /api/export/json
 GET  /api/export/singbox
 ```
 
-## Scheduler
+## Web UI
 
-Автоматический scheduler можно отключить:
-
-```yaml
-health_check_interval: "0s"
-```
-
-При таком значении проверка не запускается автоматически.
-
-Проверка выполняется только вручную:
-
-```bash
-curl -X POST http://localhost:8080/api/check
-```
-
-или через кнопку Web UI.
-
-Это позволяет каждый раз проверять актуальный набор конфигураций вручную.
-
-## Производительность
-
-Переход от большого сырого набора примерно в 34 000 конфигураций к FAST-источникам примерно на 2 000 конфигураций существенно сократил время проверки.
-
-Контрольный запуск:
+Frontend files:
 
 ```text
-2047 конфигураций
-84 рабочих
-1963 нерабочих
-4.10% рабочих
-9 мин 16 сек
-3.68 cfg/s
+web/
+├── index.html
+├── app.js
+└── style.css
 ```
 
-Основное ускорение обеспечивается:
+The Web UI provides:
 
-* более качественными источниками;
-* удалением дублей;
-* TCP pre-check;
-* параллельной обработкой.
+* realtime check status;
+* working/failed counters;
+* progress bar;
+* current speed;
+* ETA;
+* protocol statistics;
+* best working configurations;
+* TXT, JSON, and Sing-box export;
+* Catppuccin Latte for light mode;
+* Catppuccin Mocha for dark mode.
 
-## Релизы
+The theme follows the system `prefers-color-scheme` setting.
 
-Проект поддерживает автоматическую сборку release-артефактов через GitHub Actions.
+## Releases
 
-Релиз запускается созданием Git-тега:
-
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-После этого workflow собирает:
+GitHub Actions can build release artifacts for:
 
 ```text
 Linux amd64
@@ -534,12 +481,19 @@ macOS arm64
 Windows amd64
 ```
 
-Для каждой платформы создаются архивы с:
+Create a release by pushing a version tag:
 
-* `vpn-checker` server;
-* `vpn-checker-collector`.
+```bash
+git tag <version>
+git push origin <version>
+```
 
-Примеры названий:
+The release workflow creates archives containing:
+
+* the VPN Checker server;
+* the Collector binary.
+
+Example artifact names:
 
 ```text
 vpn-checker-linux-amd64.tar.gz
@@ -549,27 +503,22 @@ vpn-checker-darwin-arm64.tar.gz
 vpn-checker-windows-amd64.zip
 ```
 
-Готовые бинарники публикуются в GitHub Releases.
-
-### sing-box
-
-`sing-box` не встраивается в бинарник VPN Checker и должен быть установлен отдельно.
+`sing-box` is distributed separately and must be installed on the target system.
 
 ## SLSA Provenance
 
-Для release-артефактов используется SLSA Generic Generator.
+Release artifacts are processed by the SLSA Generic Generator.
 
-После создания GitHub Release workflow:
+The workflow:
 
-1. скачивает реальные release-артефакты;
-2. вычисляет SHA-256;
-3. передаёт hashes в SLSA Generator;
-4. создаёт provenance;
-5. добавляет provenance в GitHub Release.
+1. downloads the actual release artifacts;
+2. calculates SHA-256 digests;
+3. generates SLSA provenance;
+4. uploads the provenance to the GitHub Release.
 
-Это позволяет проверять происхождение опубликованных release-артефактов.
+This allows users to verify the origin of published release artifacts.
 
-## Структура проекта
+## Project Structure
 
 ```text
 cmd/
@@ -621,37 +570,25 @@ web/
     └── generator-generic-ossf-slsa3-publish.yml
 ```
 
-## Тесты
+## Tests
 
-Запустить все тесты:
+Run all tests:
 
 ```bash
 go test ./...
 ```
 
-Форматирование:
+Format Go code:
 
 ```bash
 gofmt -w .
 ```
 
-## Примечания
-
-VPN-конфигурации являются динамическими.
-
-Рабочая конфигурация может перестать работать в любой момент, поэтому результаты проверки не следует считать постоянным кэшем доступности.
-
-Каждый новый запуск рекомендуется выполнять на актуальном наборе конфигураций.
-
 ## License
 
 This project is licensed under the MIT License.
 
-Полный текст лицензии находится в файле:
+See [`LICENSE`](LICENSE) for the full license text.
 
-```text
-LICENSE
-```
-
-MIT License разрешает использовать, изменять, распространять и создавать производные версии проекта при сохранении уведомления об авторских правах и текста лицензии.
+MIT permits using, copying, modifying, merging, publishing, distributing, sublicensing, and selling copies of the software, provided that the copyright notice and license text are preserved.
 
